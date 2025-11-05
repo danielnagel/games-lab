@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakout Game</title>
+    <style>
+        body {
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            background-color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Breakout Game</h1>
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const gameState = {
+            // id of reququestAnimationFrame
+            stopMain: null,
+            // keeps track of the last provided requestAnimationFrame timestamp.
+            lastRender: 0,
+            // keeps track of the last update time. Always increments by tickLength.
+            lastTick: 0,
+            // is how frequently the game state updates. It is 60 Hz (16ms) here.
+            tickLength: 16,
+            // game objects and state
+            objects: {
+                ball: {
+                    x: canvas.width / 2,
+                    y: canvas.height - 30,
+                    radius: 10,
+                    dx: 4,
+                    dy: -4
+                },
+            }
+        };
+        (() => {
+            function update(tick) {
+                // Update game state logic here
+                // For example, move paddle, ball, check collisions, etc.
+                if(gameState.objects.ball.x + gameState.objects.ball.dx > canvas.width - gameState.objects.ball.radius || gameState.objects.ball.x + gameState.objects.ball.dx < gameState.objects.ball.radius) {
+                    gameState.objects.ball.dx = -gameState.objects.ball.dx;
+                }
+                if(gameState.objects.ball.y + gameState.objects.ball.dy > canvas.height - gameState.objects.ball.radius || gameState.objects.ball.y + gameState.objects.ball.dy < gameState.objects.ball.radius) {
+                    gameState.objects.ball.dy = -gameState.objects.ball.dy;
+                }
+                gameState.objects.ball.x += gameState.objects.ball.dx;
+                gameState.objects.ball.y += gameState.objects.ball.dy;
+            }
+            CanvasRenderingContext2D.prototype.fillCircle = function (x,y,r) {
+                this.beginPath();
+                this.arc (x,y,r,0,2*Math.PI);
+                this.fill();
+            }
+            function render(tFrame) {
+                ctx.miterLimit = 2;
+                // Clear the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Render game objects here
+                // For example, draw paddle, ball, bricks, etc.
+                ctx.fillStyle = "#0095DD";
+                ctx.fillCircle(gameState.objects.ball.x, gameState.objects.ball.y, gameState.objects.ball.radius);
+            }
+            function queueUpdates(numTicks) {
+                for (let i = 0; i < numTicks; i++) {
+                    gameState.lastTick += gameState.tickLength; // Now lastTick is this tick.
+                    update(gameState.lastTick);
+                }
+            }
+
+            function main(tFrame) {
+                gameState.stopMain = window.requestAnimationFrame(main);
+                const nextTick = gameState.lastTick + gameState.tickLength;
+                // numTicks is how many updates should have happened between these two rendered frames.
+                let numTicks = 0;
+                if (tFrame > nextTick) {
+                    const timeSinceTick = tFrame - gameState.lastTick;
+                    numTicks = Math.floor(timeSinceTick / gameState.tickLength);
+                }
+
+                queueUpdates(numTicks);
+                render(tFrame);
+                gameState.lastRender = tFrame;
+            }
+            gameState.lastTick = performance.now();
+            gameState.lastRender = gameState.lastTick; // Pretend the first draw was on first update.
+
+            main(performance.now());
+        })();
+    </script>
+</body>
+
+</html>
