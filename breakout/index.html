@@ -33,6 +33,10 @@
             lastTick: 0,
             // is how frequently the game state updates. It is 60 Hz (16ms) here.
             tickLength: 16,
+            // is true when the ball is lost
+            ballLost: false,
+            // timeout after ball is lost (ms)
+            timeoutAfterBallLost: 500,
             // game objects and state
             objects: {
                 ball: {
@@ -56,8 +60,23 @@
                 if(gameState.objects.ball.x + gameState.objects.ball.dx > canvas.width - gameState.objects.ball.radius || gameState.objects.ball.x + gameState.objects.ball.dx < gameState.objects.ball.radius) {
                     gameState.objects.ball.dx = -gameState.objects.ball.dx;
                 }
-                if(gameState.objects.ball.y + gameState.objects.ball.dy > canvas.height - gameState.objects.ball.radius || gameState.objects.ball.y + gameState.objects.ball.dy < gameState.objects.ball.radius) {
+                // ball collision with top
+                if(gameState.objects.ball.y + gameState.objects.ball.dy < gameState.objects.ball.radius) {
                     gameState.objects.ball.dy = -gameState.objects.ball.dy;
+                }
+                // ball falls below paddle
+                if(gameState.objects.ball.y > canvas.height + gameState.objects.ball.radius) {
+                    gameState.ballLost = true;
+                    gameState.timeoutAfterBallLost -= gameState.tickLength;
+                    if(gameState.timeoutAfterBallLost <= 0) {
+                        gameState.ballLost = false;
+                        gameState.timeoutAfterBallLost = 500;
+                        // reset ball position
+                        gameState.objects.ball.x = canvas.width / 2;
+                        gameState.objects.ball.y = canvas.height - 30;
+                        gameState.objects.ball.dx = 2;
+                        gameState.objects.ball.dy = -2;
+                    }
                 }
 
                 // paddle collision
@@ -70,7 +89,6 @@
                 // update ball position
                 gameState.objects.ball.x += gameState.objects.ball.dx;
                 gameState.objects.ball.y += gameState.objects.ball.dy;
-                
             }
             function userInput() {
                 document.addEventListener("mousemove", (event) => {
@@ -99,6 +117,13 @@
                 // Draw paddle
                 ctx.fillStyle = "#0095DD";
                 ctx.fillRect(gameState.objects.paddle.x, gameState.objects.paddle.y, gameState.objects.paddle.width, gameState.objects.paddle.height);
+
+                // If ball is lost, show message
+                if(gameState.ballLost) {
+                    ctx.font = "16px Arial";
+                    ctx.fillStyle = "#ff0000";
+                    ctx.fillText("Ball lost! Resetting in " + gameState.timeoutAfterBallLost+ "ms", 10, 20);
+                }
             }
             function queueUpdates(numTicks) {
                 for (let i = 0; i < numTicks; i++) {
