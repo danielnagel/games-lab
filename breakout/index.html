@@ -39,23 +39,46 @@
                     x: canvas.width / 2,
                     y: canvas.height - 30,
                     radius: 10,
-                    dx: 4,
-                    dy: -4
+                    dx: 2,
+                    dy: -2
+                },
+                paddle: {
+                    width: 75,
+                    height: 10,
+                    x: (canvas.width - 75) / 2,
+                    y: canvas.height - 10
                 },
             }
         };
         (() => {
             function update(tick) {
-                // Update game state logic here
-                // For example, move paddle, ball, check collisions, etc.
+                // ball collision with walls
                 if(gameState.objects.ball.x + gameState.objects.ball.dx > canvas.width - gameState.objects.ball.radius || gameState.objects.ball.x + gameState.objects.ball.dx < gameState.objects.ball.radius) {
                     gameState.objects.ball.dx = -gameState.objects.ball.dx;
                 }
                 if(gameState.objects.ball.y + gameState.objects.ball.dy > canvas.height - gameState.objects.ball.radius || gameState.objects.ball.y + gameState.objects.ball.dy < gameState.objects.ball.radius) {
                     gameState.objects.ball.dy = -gameState.objects.ball.dy;
                 }
+
+                // paddle collision
+                if (gameState.objects.ball.y + gameState.objects.ball.radius > gameState.objects.paddle.y &&
+                    gameState.objects.ball.x > gameState.objects.paddle.x &&
+                    gameState.objects.ball.x < gameState.objects.paddle.x + gameState.objects.paddle.width) {
+                    gameState.objects.ball.dy = -gameState.objects.ball.dy;
+                }
+
+                // update ball position
                 gameState.objects.ball.x += gameState.objects.ball.dx;
                 gameState.objects.ball.y += gameState.objects.ball.dy;
+                
+            }
+            function userInput() {
+                document.addEventListener("mousemove", (event) => {
+                    const relativeX = event.clientX - canvas.offsetLeft;
+                    if(relativeX > 0 && relativeX < canvas.width) {
+                        gameState.objects.paddle.x = relativeX - gameState.objects.paddle.width / 2;
+                    }
+                });
             }
             CanvasRenderingContext2D.prototype.fillCircle = function (x,y,r) {
                 this.beginPath();
@@ -68,9 +91,14 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 // Render game objects here
-                // For example, draw paddle, ball, bricks, etc.
+
+                // Draw ball
                 ctx.fillStyle = "#0095DD";
                 ctx.fillCircle(gameState.objects.ball.x, gameState.objects.ball.y, gameState.objects.ball.radius);
+
+                // Draw paddle
+                ctx.fillStyle = "#0095DD";
+                ctx.fillRect(gameState.objects.paddle.x, gameState.objects.paddle.y, gameState.objects.paddle.width, gameState.objects.paddle.height);
             }
             function queueUpdates(numTicks) {
                 for (let i = 0; i < numTicks; i++) {
@@ -96,6 +124,7 @@
             gameState.lastTick = performance.now();
             gameState.lastRender = gameState.lastTick; // Pretend the first draw was on first update.
 
+            userInput();
             main(performance.now());
         })();
     </script>
