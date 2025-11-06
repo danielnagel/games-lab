@@ -67,6 +67,24 @@
                     x: (canvas.width - 75) / 2,
                     y: canvas.height - 10
                 },
+                bricks: (function () {
+                    const cols = 6;
+                    const rows = 2;
+                    const gap = 12; // gleicher Abstand links, rechts und zwischen den Bricks
+                    const brickWidth = (canvas.width - (cols + 1) * gap) / cols; // ergibt 66 bei canvas.width=480
+                    const brickHeight = 20;
+                    const startY = 40;
+                    const rowGap = gap + brickHeight; // y-Abstand zwischen den Reihen (20 Höhe + 20 Abstand wie vorher)
+                    const arr = [];
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            const x = gap + c * (brickWidth + gap);
+                            const y = startY + r * rowGap;
+                            arr.push({ width: brickWidth, height: brickHeight, x: x, y: y, status: 1 });
+                        }
+                    }
+                    return arr;
+                })()
             }
         };
         let audioCtx = null;
@@ -109,18 +127,18 @@
                 // ball collision with walls
                 if (gameState.objects.ball.x + gameState.objects.ball.dx > canvas.width - gameState.objects.ball.radius || gameState.objects.ball.x + gameState.objects.ball.dx < gameState.objects.ball.radius) {
                     gameState.objects.ball.dx = -gameState.objects.ball.dx;
-                    playBeep();
+                    playBeep(440, 100);
                 }
                 // ball collision with top
                 if (gameState.objects.ball.y + gameState.objects.ball.dy < gameState.objects.ball.radius) {
                     gameState.objects.ball.dy = -gameState.objects.ball.dy;
-                    playBeep(396);
+                    playBeep(396, 100);
                 }
                 // ball falls below paddle
                 if (gameState.objects.ball.y > canvas.height + gameState.objects.ball.radius) {
                     gameState.ballLost = true;
-                    if(gameState.timeoutAfterBallLost === 500) {
-                        playBeep(297, 300);
+                    if (gameState.timeoutAfterBallLost === 500) {
+                        playBeep(297, 200);
                     }
                     gameState.timeoutAfterBallLost -= gameState.tickLength;
                     if (gameState.timeoutAfterBallLost <= 0) {
@@ -139,8 +157,22 @@
                     gameState.objects.ball.x > gameState.objects.paddle.x &&
                     gameState.objects.ball.x < gameState.objects.paddle.x + gameState.objects.paddle.width) {
                     gameState.objects.ball.dy = -gameState.objects.ball.dy;
-                    playBeep(396);
+                    playBeep(396, 100);
                 }
+
+                // brick collision
+                gameState.objects.bricks.forEach((brick) => {
+                    if (brick.status === 1) {
+                        if (gameState.objects.ball.x > brick.x &&
+                            gameState.objects.ball.x < brick.x + brick.width &&
+                            gameState.objects.ball.y - gameState.objects.ball.radius < brick.y + brick.height &&
+                            gameState.objects.ball.y + gameState.objects.ball.radius > brick.y) {
+                            gameState.objects.ball.dy = -gameState.objects.ball.dy;
+                            brick.status = 0; // brick is hit
+                            playBeep(523, 100);
+                        }
+                    }
+                });
 
                 // update ball position
                 gameState.objects.ball.x += gameState.objects.ball.dx;
@@ -173,6 +205,14 @@
                 // Draw paddle
                 ctx.fillStyle = "#0095DD";
                 ctx.fillRect(gameState.objects.paddle.x, gameState.objects.paddle.y, gameState.objects.paddle.width, gameState.objects.paddle.height);
+
+                // Draw bricks
+                gameState.objects.bricks.forEach((brick) => {
+                    if (brick.status === 1) {
+                        ctx.fillStyle = "#0095DD";
+                        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+                    }
+                });
 
                 // If ball is lost, show message
                 if (gameState.ballLost) {
