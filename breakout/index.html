@@ -242,16 +242,17 @@
                 render(tFrame);
                 gameState.lastRender = tFrame;
             }
-            gameState.lastTick = performance.now();
-            gameState.lastRender = gameState.lastTick; // Pretend the first draw was on first update.
-
-            userInput();
-            document.getElementById("startButton").addEventListener("click", () => {
+            function startGame() {
                 if (!audioCtx)
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 document.getElementById("startButton").disabled = true;
+                gameState.lastTick = performance.now();
+                gameState.lastRender = gameState.lastTick; // Pretend the first draw was on first update.
                 main(performance.now());
-            });
+            }
+
+            userInput();
+            document.getElementById("startButton").addEventListener("click", startGame);
         })();
     </script>
 </body>
