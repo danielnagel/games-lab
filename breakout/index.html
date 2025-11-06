@@ -306,6 +306,8 @@
                 }
 
                 if(!gameState.gameStarted) {
+                    ctx.fillStyle = "#66CCFFAA";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.fillStyle = "black";
                     ctx.font = "bold 36px Arial";
                     ctx.fillText("BREAKOUT", canvas.width / 2 - 100, canvas.height / 2 - 40);
