@@ -36,6 +36,7 @@
         <p><b>Controls:</b></p>
         <p>Move the paddle with your mouse.</p>
         <p>Touch to relocate the paddle.</p>
+        <p>Use the arrow keys on your keyboard.</p>
         <button id="startButton">Start Game</button>
     </div>
     <script>
@@ -67,7 +68,8 @@
                     width: 75,
                     height: 10,
                     x: (canvas.width - 75) / 2,
-                    y: canvas.height - 10 // minus height of paddle
+                    y: canvas.height - 10, // minus height of paddle
+                    keyboardSpeed: 7
                 },
                 bricks: (function () {
                     const cols = 6;
@@ -87,6 +89,10 @@
                     }
                     return arr;
                 })()
+            },
+            controls: {
+                rightPressed: false,
+                leftPressed: false
             }
         };
         let audioCtx = null;
@@ -154,6 +160,13 @@
                     }
                 }
 
+                // paddle movement
+                if (gameState.controls.rightPressed && gameState.objects.paddle.x < canvas.width - gameState.objects.paddle.width) {
+                    gameState.objects.paddle.x += gameState.objects.paddle.keyboardSpeed;
+                } else if (gameState.controls.leftPressed && gameState.objects.paddle.x > 0) {
+                    gameState.objects.paddle.x -= gameState.objects.paddle.keyboardSpeed;
+                }
+
                 // paddle collision
                 if (gameState.objects.ball.y + gameState.objects.ball.radius > gameState.objects.paddle.y &&
                     gameState.objects.ball.x > gameState.objects.paddle.x &&
@@ -195,6 +208,20 @@
                         gameState.objects.paddle.x = relativeX - gameState.objects.paddle.width / 2;
                     }
                 }, { passive: false });
+                document.addEventListener("keydown", (event) => {
+                    if (event.key === "ArrowRight") {
+                        gameState.controls.rightPressed = true;
+                    } else if (event.key === "ArrowLeft") {
+                        gameState.controls.leftPressed = true;
+                    }
+                });
+                document.addEventListener("keyup", (event) => {
+                    if (event.key === "ArrowRight") {
+                        gameState.controls.rightPressed = false;
+                    } else if (event.key === "ArrowLeft") {
+                        gameState.controls.leftPressed = false;
+                    }
+                });
             }
             CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
                 this.beginPath();
