@@ -32,12 +32,10 @@
     <h1>Breakout Game</h1>
     <canvas id="gameCanvas" width="480" height="320"></canvas>
     <div>
-        <p>Press "Start Game" to begin!</p>
         <p><b>Controls:</b></p>
         <p>Move the paddle with your mouse.</p>
         <p>Touch to relocate the paddle.</p>
         <p>Use the arrow keys on your keyboard.</p>
-        <button id="startButton">Start Game</button>
     </div>
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -55,6 +53,8 @@
             timeoutAfterBallLost: 500,
             // number of player lives
             lives: 3,
+            // whether the game has started
+            gameStarted: false,
             // whether the game is lost
             gameLost: false,
             // game objects and state
@@ -99,6 +99,9 @@
         };
         let audioCtx = null;
         (() => {
+            function pausedGame() {
+                return !gameState.gameStarted || gameState.gameLost;
+            }
             function playBeep(frequency = 440, durationMs = 200, type = "sine") {
                 if (audioCtx.state !== "running") return; // noch keine User-Interaktion → still
 
@@ -134,7 +137,7 @@
             }
 
             function update(tick) {
-                if(gameState.gameLost) {
+                if(pausedGame()) {
                     return; // game over
                 }
                 // ball collision with walls
@@ -204,20 +207,26 @@
                 gameState.objects.ball.x += gameState.objects.ball.dx;
                 gameState.objects.ball.y += gameState.objects.ball.dy;
             }
+            function initAudio() {
+                if (!audioCtx)
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            function startGame() {
+                if(!gameState.gameStarted) {
+                    initAudio();
+                    gameState.gameStarted = true;
+                }
+            }
             function userInput() {
                 document.addEventListener("mousemove", (event) => {
-                    if(gameState.gameLost) {
-                        return; // no input when game over
-                    }
+                    if(pausedGame()) return; // no input when paused or game over
                     const relativeX = event.clientX - canvas.offsetLeft;
                     if (relativeX > 0 && relativeX < canvas.width) {
                         gameState.objects.paddle.x = relativeX - gameState.objects.paddle.width / 2;
                     }
                 });
                 document.addEventListener("touchmove", (event) => {
-                    if(gameState.gameLost) {
-                        return; // no input when game over
-                    }
+                    if(pausedGame()) return; // no input when paused or game over
                     const touch = event.touches[0];
                     const relativeX = touch.clientX - canvas.offsetLeft;
                     if (relativeX > 0 && relativeX < canvas.width) {
@@ -225,6 +234,10 @@
                     }
                 }, { passive: false });
                 document.addEventListener("keydown", (event) => {
+                    if(!gameState.gameStarted && event.key === " ") {
+                        startGame();
+                        return;
+                    }
                     if (event.key === "ArrowRight" && !gameState.gameLost) {
                         gameState.controls.rightPressed = true;
                     } else if (event.key === "ArrowLeft" && !gameState.gameLost) {
@@ -249,6 +262,9 @@
                     } else if (event.key === "ArrowLeft") {
                         gameState.controls.leftPressed = false;
                     }
+                });
+                document.addEventListener("click", () => {
+                    startGame();
                 });
             }
             CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
@@ -289,6 +305,12 @@
                     ctx.fillText("Game Over!", canvas.width / 2 - 70, canvas.height / 2);
                     ctx.fillText("Refresh or press 'r' to Restart", canvas.width / 2 - 160, canvas.height / 2 + 30);
                 }
+
+                if(!gameState.gameStarted) {
+                    ctx.font = "24px Arial";
+                    ctx.fillStyle = "black";
+                    ctx.fillText("Click or press 'space' to Start", canvas.width / 2 - 160, canvas.height / 2);
+                }
             }
             function queueUpdates(numTicks) {
                 for (let i = 0; i < numTicks; i++) {
@@ -311,17 +333,11 @@
                 render(tFrame);
                 gameState.lastRender = tFrame;
             }
-            function startGame() {
-                if (!audioCtx)
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                document.getElementById("startButton").disabled = true;
-                gameState.lastTick = performance.now();
-                gameState.lastRender = gameState.lastTick; // Pretend the first draw was on first update.
-                main(performance.now());
-            }
 
             userInput();
-            document.getElementById("startButton").addEventListener("click", startGame);
+            gameState.lastTick = performance.now();
+            gameState.lastRender = gameState.lastTick; // Pretend the first draw was on first update.
+            main(performance.now());
         })();
     </script>
 </body>
