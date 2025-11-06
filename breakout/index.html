@@ -54,6 +54,8 @@
             gameStarted: false,
             // whether the game is lost
             gameLost: false,
+            // whether the game is won
+            gameWon: false,
             // game objects and state
             objects: {
                 ball: {
@@ -96,8 +98,11 @@
         };
         let audioCtx = null;
         (() => {
+            function gameOver() {
+                return gameState.gameLost || gameState.gameWon;
+            }
             function pausedGame() {
-                return !gameState.gameStarted || gameState.gameLost;
+                return !gameState.gameStarted || gameOver();
             }
             function playBeep(frequency = 440, durationMs = 200, type = "sine") {
                 if (audioCtx.state !== "running") return; // noch keine User-Interaktion → still
@@ -200,6 +205,12 @@
                     }
                 });
 
+                // check win condition
+                const allBricksDestroyed = gameState.objects.bricks.every((brick) => brick.status === 0);
+                if (allBricksDestroyed) {
+                    gameState.gameWon = true;
+                }
+
                 // update ball position
                 gameState.objects.ball.x += gameState.objects.ball.dx;
                 gameState.objects.ball.y += gameState.objects.ball.dy;
@@ -237,19 +248,19 @@
                         startGame();
                         return;
                     }
-                    if (event.key === "ArrowRight" && !gameState.gameLost) {
+                    if (event.key === "ArrowRight" && !gameOver()) {
                         gameState.controls.rightPressed = true;
-                    } else if (event.key === "ArrowLeft" && !gameState.gameLost) {
+                    } else if (event.key === "ArrowLeft" && !gameOver()) {
                         gameState.controls.leftPressed = true;
-                    } else if (event.key === "r" && gameState.gameLost) {
+                    } else if (event.key === "r" && gameOver()) {
                         // Restart the game
                         gameState.gameLost = false;
+                        gameState.gameWon = false;
                         gameState.lives = 3;
                         gameState.objects.ball.x = canvas.width / 2;
                         gameState.objects.ball.y = canvas.height - 30;
                         gameState.objects.ball.dx = 2;
                         gameState.objects.ball.dy = -2;
-                        // Reset bricks
                         gameState.objects.bricks.forEach((brick) => {
                             brick.status = 1;
                         });
@@ -299,6 +310,8 @@
                 ctx.fillText("Lives: " + gameState.lives, canvas.width - 80, 20);
 
                 if(gameState.gameLost) {
+                    ctx.fillStyle = "#CCCA";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.font = "24px Arial";
                     ctx.fillStyle = "red";
                     ctx.fillText("Game Over!", canvas.width / 2 - 70, canvas.height / 2);
@@ -315,6 +328,15 @@
                     ctx.fillText("Click, touch or press 'space' to Start", canvas.width / 2 - 190, canvas.height / 2);
                     ctx.font = "16px Arial";
                     ctx.fillText("Use mouse, touch, or arrow keys to move paddle", canvas.width / 2 - 170, canvas.height / 2 + 30);
+                }
+
+                if(gameState.gameWon) {
+                    ctx.fillStyle = "#CCCA";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = "24px Arial";
+                    ctx.fillStyle = "green";
+                    ctx.fillText("You Win!", canvas.width / 2 - 60, canvas.height / 2);
+                    ctx.fillText("Refresh or press 'r' to Restart", canvas.width / 2 - 160, canvas.height / 2 + 30);
                 }
             }
             function queueUpdates(numTicks) {
