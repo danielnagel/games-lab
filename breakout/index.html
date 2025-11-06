@@ -65,7 +65,7 @@
                     width: 75,
                     height: 10,
                     x: (canvas.width - 75) / 2,
-                    y: canvas.height - 10
+                    y: canvas.height - 10 // minus height of paddle
                 },
                 bricks: (function () {
                     const cols = 6;
@@ -157,6 +157,7 @@
                     gameState.objects.ball.x > gameState.objects.paddle.x &&
                     gameState.objects.ball.x < gameState.objects.paddle.x + gameState.objects.paddle.width) {
                     gameState.objects.ball.dy = -gameState.objects.ball.dy;
+                    gameState.objects.ball.y = gameState.objects.paddle.y - gameState.objects.ball.radius; // prevent sticking
                     playBeep(396, 100);
                 }
 
