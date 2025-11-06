@@ -33,7 +33,9 @@
     <canvas id="gameCanvas" width="480" height="320"></canvas>
     <div>
         <p>Press "Start Game" to begin!</p>
+        <p><b>Controls:</b></p>
         <p>Move the paddle with your mouse.</p>
+        <p>Touch to relocate the paddle.</p>
         <button id="startButton">Start Game</button>
     </div>
     <script>
@@ -186,6 +188,13 @@
                         gameState.objects.paddle.x = relativeX - gameState.objects.paddle.width / 2;
                     }
                 });
+                document.addEventListener("touchmove", (event) => {
+                    const touch = event.touches[0];
+                    const relativeX = touch.clientX - canvas.offsetLeft;
+                    if (relativeX > 0 && relativeX < canvas.width) {
+                        gameState.objects.paddle.x = relativeX - gameState.objects.paddle.width / 2;
+                    }
+                }, { passive: false });
             }
             CanvasRenderingContext2D.prototype.fillCircle = function (x, y, r) {
                 this.beginPath();
