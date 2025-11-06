@@ -51,10 +51,12 @@
             lastTick: 0,
             // is how frequently the game state updates. It is 60 Hz (16ms) here.
             tickLength: 16,
-            // is true when the ball is lost
-            ballLost: false,
             // timeout after ball is lost (ms)
             timeoutAfterBallLost: 500,
+            // number of player lives
+            lives: 3,
+            // whether the game is lost
+            gameLost: false,
             // game objects and state
             objects: {
                 ball: {
@@ -132,6 +134,9 @@
             }
 
             function update(tick) {
+                if(gameState.gameLost) {
+                    return; // game over
+                }
                 // ball collision with walls
                 if (gameState.objects.ball.x + gameState.objects.ball.dx > canvas.width - gameState.objects.ball.radius || gameState.objects.ball.x + gameState.objects.ball.dx < gameState.objects.ball.radius) {
                     gameState.objects.ball.dx = -gameState.objects.ball.dx;
@@ -144,14 +149,19 @@
                 }
                 // ball falls below paddle
                 if (gameState.objects.ball.y > canvas.height + gameState.objects.ball.radius) {
-                    gameState.ballLost = true;
                     if (gameState.timeoutAfterBallLost === 500) {
                         playBeep(297, 200);
                     }
                     gameState.timeoutAfterBallLost -= gameState.tickLength;
                     if (gameState.timeoutAfterBallLost <= 0) {
-                        gameState.ballLost = false;
                         gameState.timeoutAfterBallLost = 500;
+
+                        gameState.lives -= 1;
+                        if (gameState.lives <= 0) {
+                            gameState.gameLost = true;
+                            return;
+                        }
+
                         // reset ball position
                         gameState.objects.ball.x = canvas.width / 2;
                         gameState.objects.ball.y = canvas.height - 30;
@@ -196,12 +206,18 @@
             }
             function userInput() {
                 document.addEventListener("mousemove", (event) => {
+                    if(gameState.gameLost) {
+                        return; // no input when game over
+                    }
                     const relativeX = event.clientX - canvas.offsetLeft;
                     if (relativeX > 0 && relativeX < canvas.width) {
                         gameState.objects.paddle.x = relativeX - gameState.objects.paddle.width / 2;
                     }
                 });
                 document.addEventListener("touchmove", (event) => {
+                    if(gameState.gameLost) {
+                        return; // no input when game over
+                    }
                     const touch = event.touches[0];
                     const relativeX = touch.clientX - canvas.offsetLeft;
                     if (relativeX > 0 && relativeX < canvas.width) {
@@ -209,10 +225,22 @@
                     }
                 }, { passive: false });
                 document.addEventListener("keydown", (event) => {
-                    if (event.key === "ArrowRight") {
+                    if (event.key === "ArrowRight" && !gameState.gameLost) {
                         gameState.controls.rightPressed = true;
-                    } else if (event.key === "ArrowLeft") {
+                    } else if (event.key === "ArrowLeft" && !gameState.gameLost) {
                         gameState.controls.leftPressed = true;
+                    } else if (event.key === "r" && gameState.gameLost) {
+                        // Restart the game
+                        gameState.gameLost = false;
+                        gameState.lives = 3;
+                        gameState.objects.ball.x = canvas.width / 2;
+                        gameState.objects.ball.y = canvas.height - 30;
+                        gameState.objects.ball.dx = 2;
+                        gameState.objects.ball.dy = -2;
+                        // Reset bricks
+                        gameState.objects.bricks.forEach((brick) => {
+                            brick.status = 1;
+                        });
                     }
                 });
                 document.addEventListener("keyup", (event) => {
@@ -251,11 +279,15 @@
                     }
                 });
 
-                // If ball is lost, show message
-                if (gameState.ballLost) {
-                    ctx.font = "16px Arial";
-                    ctx.fillStyle = "#ff0000";
-                    ctx.fillText("Ball lost! Resetting in " + gameState.timeoutAfterBallLost + "ms", 10, 20);
+                ctx.font = "16px Arial";
+                ctx.fillStyle = "#0095DD";
+                ctx.fillText("Lives: " + gameState.lives, canvas.width - 80, 20);
+
+                if(gameState.gameLost) {
+                    ctx.font = "24px Arial";
+                    ctx.fillStyle = "red";
+                    ctx.fillText("Game Over!", canvas.width / 2 - 70, canvas.height / 2);
+                    ctx.fillText("Refresh or press 'r' to Restart", canvas.width / 2 - 160, canvas.height / 2 + 30);
                 }
             }
             function queueUpdates(numTicks) {
